@@ -93,6 +93,12 @@
 					"scope": "resource",
 					"default": false,
 					"description": "compute MAC only over values which end up encrypted (default: false)"
+				},
+				"sops.defaults.indent": {
+					"type": "string",
+					"scope": "resource",
+					"default": "2",
+					"description": "encrypt/decrypt indent (default: 2)"
 				}
 			}
 		},

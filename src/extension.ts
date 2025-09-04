@@ -17,7 +17,7 @@ function enableDebug() {
 	(Debug as any).log = (...args: any[]) => outputChannel.appendLine(args.join(', '));
 	Debug.enable(DEBUG_NAMESPACE);
 };
-//enableDebug(); // Uncomment this line to show debug logs in output
+// enableDebug(); // Uncomment this line to show debug logs in output
 
 const debug = Debug(DEBUG_NAMESPACE);
 
@@ -43,6 +43,7 @@ enum ConfigName {
 	configPath = 'configPath', // Run Control path
 	ignoreMac = "ignoreMac",
 	macOnlyEncrypted = "macOnlyEncrypted",
+	indent = 'defaults.indent'
 }
 interface IRunControl {
 	awsProfile?: string;
@@ -520,7 +521,9 @@ async function getSopsGeneralOptions(fileUriToEncryptOrDecrypt: vscode.Uri) {
 	const defaultAgeKeyFile: string | undefined = vscode.workspace.getConfiguration(CONFIG_BASE_SECTION).get(ConfigName.defaultAgeKeyFile);
 	const ignoreMac: boolean | undefined = vscode.workspace.getConfiguration(CONFIG_BASE_SECTION).get(ConfigName.ignoreMac);
 	const macOnlyEncrypted: boolean | undefined = vscode.workspace.getConfiguration(CONFIG_BASE_SECTION).get(ConfigName.macOnlyEncrypted);
-	debug('config', { defaultAwsProfile, defaultGcpCredentialsPath, defaultAgeKeyFile });
+	const indent: string | undefined = vscode.workspace.getConfiguration(CONFIG_BASE_SECTION).get(ConfigName.indent);
+	debug('config', { defaultAwsProfile, defaultGcpCredentialsPath, defaultAgeKeyFile, ignoreMac, indent });
+	debug('indent', { indent });
 	const rc = await getRunControl();
 	const awsProfile = rc.awsProfile ?? defaultAwsProfile;
 	let gcpCredentialsPath = rc.gcpCredentialsPath ?? defaultGcpCredentialsPath;
@@ -540,6 +543,10 @@ async function getSopsGeneralOptions(fileUriToEncryptOrDecrypt: vscode.Uri) {
 
 	if (macOnlyEncrypted) {
 		sopsGeneralArgs.push('--mac-only-encrypted');
+	}
+
+	if (indent) {
+		sopsGeneralArgs.push('--indent', indent);
 	}
 
 	if (gcpCredentialsPath) {
