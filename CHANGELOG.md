@@ -4,6 +4,10 @@ All notable changes to the "vscode-sops" extension will be documented in this fi
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+### Fixed
+- Support for files parsed as `null`
+
 ## [0.9.3]
 ### Fixed
 - Missing `--mac-only-encrypted` option in `sops` command.

@@ -154,8 +154,8 @@ async function handleFile(document: vscode.TextDocument, fileFormat: IFileFormat
 }
 
 function isSopsEncryptedData(fileData: ParsedObject) {
-	return typeof fileData === 'object' && (
-		typeof fileData.sops === 'object' && typeof fileData.sops.version === 'string'
+	return typeof fileData === 'object' && fileData !== null && (
+		typeof fileData.sops === 'object' && fileData.sops !== null && typeof fileData.sops.version === 'string'
 		|| typeof fileData.sops_version === 'string'
 	);
 }
@@ -224,7 +224,7 @@ class ParseError extends Error {
 	}
 }
 
-type ParsedObject = string | number | boolean | {
+type ParsedObject = string | number | boolean | null | {
 	[key: string]: ParsedObject;
 };
 
