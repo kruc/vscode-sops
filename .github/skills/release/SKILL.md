@@ -23,10 +23,12 @@ Bumps the version, builds, publishes to VS Code Marketplace and Open VSX, then c
 - [ ] Working directory is the `vscode-sops` repository root
 - [ ] `master` branch is clean (no uncommitted changes)
 - [ ] `sops` CLI is available (needed to decrypt `.env` for OVSX token)
-- [ ] `vsce` CLI available (`npm install -g @vscode/vsce`)
+- [ ] `vsce` CLI available (`npx vsce` from node_modules)
 - [ ] `npx ovsx` available
-- [ ] `gh` CLI authenticated for creating GitHub Release
-- [ ] Node.js dependencies installed (`npm ci`)
+- [ ] Node.js available via nvm (use `nvm use 22` or latest LTS)
+- [ ] Node.js dependencies installed (`npm install` — use `--registry https://registry.npmjs.org` if the private CodeArtifact registry token is expired)
+- [ ] `gh` CLI for creating GitHub Release (install locally if needed; authenticate with `GH_TOKEN` from `~/dev/signageos/projects/.env.secrets`)
+- [ ] GitHub token available in `~/dev/signageos/projects/.env.secrets` as `GITHUB_TOKEN`
 
 ---
 
@@ -120,14 +122,15 @@ If the command fails with an error like `Failed to publish: 401 Unauthorized`, `
 ⚠️  VS Code Marketplace token has expired or is invalid.
 
 To regenerate:
-1. Go to: https://dev.azure.com/ → User Settings → Personal Access Tokens
+1. Go to: https://dev.azure.com/signageos/_usersSettings/tokens
+   (Make sure you are signed in under a user that has access to the signageos organization)
 2. Create a new token with:
    - Organization: All accessible organizations (or "signageos")
-   - Scopes: Marketplace → Manage
+   - Scopes: Click "Show all scopes", then enable Marketplace → Manage (not just Read)
    - Expiration: up to 1 year
 3. Copy the token.
 4. Run: npx vsce login signageos
-   (Enter the new token when prompted — it is stored in your OS keychain)
+   (Enter the new token when prompted — it is stored in ~/.vsce)
 
 After completing the above, respond with "continue" or "done" to resume.
 ```
@@ -145,11 +148,16 @@ After completing the above, respond with "continue" or "done" to resume.
 
 ### Step 6: Publish to Open VSX Registry — `ovsx:publish`
 
-```bash
-npm run ovsx:publish
-```
-
 The script (`tools/ovsx-publish.bash`) decrypts `.env` with `sops`, sources it, and runs `npx ovsx publish -p $OVSX_TOKEN`.
+
+**Note:** If `npm run ovsx:publish` fails because `npx ovsx` tries to install from the private CodeArtifact registry and gets a 401, run the publish manually with the public registry:
+
+```bash
+sops -d .env > .decrypted~.env
+source .decrypted~.env
+npx --registry https://registry.npmjs.org ovsx publish -p $OVSX_TOKEN
+rm -f .decrypted~.env
+```
 
 #### Token expiration handling
 
@@ -184,23 +192,35 @@ After completing the above, respond with "continue" or "done" to resume.
 git add package.json package-lock.json CHANGELOG.md
 git commit -m "Bump X.Y.Z"
 git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
-git push origin master
-git push origin "vX.Y.Z"
+git push github master
+git push github "vX.Y.Z"
 ```
 
-Verify the push succeeded before creating the GitHub Release.
+**Note:** The primary remote for GitHub is `github` (not `origin`, which points to GitLab). Check with `git remote -v` if unsure.
 
 ---
 
 ### Step 8: Create GitHub Release
 
 1. Extract the new version's changelog section from `CHANGELOG.md` (everything between `## [X.Y.Z]` and the next `## [` heading).
-2. Create the release via `gh` CLI:
+2. Load the GitHub token:
+   ```bash
+   export GH_TOKEN=$(grep GITHUB_TOKEN ~/dev/signageos/projects/.env.secrets | cut -d= -f2)
+   ```
+3. Create the release via `gh` CLI:
 
 ```bash
 gh release create "vX.Y.Z" \
+  --repo signageos/vscode-sops \
   --title "vX.Y.Z" \
   --notes "<changelog content>"
+```
+
+**Note:** If `gh` CLI is not installed, download it to `/tmp`:
+```bash
+curl -sL https://github.com/cli/cli/releases/latest/download/gh_*_linux_amd64.tar.gz -o /tmp/gh.tar.gz
+tar xzf /tmp/gh.tar.gz -C /tmp
+export PATH="/tmp/gh_*_linux_amd64/bin:$PATH"
 ```
 
 **Release body format** — mirror existing releases (e.g. v0.9.3):
